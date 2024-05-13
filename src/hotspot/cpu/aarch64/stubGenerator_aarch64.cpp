@@ -11730,7 +11730,7 @@ class StubGenerator: public StubCodeGenerator {
 
 #endif // LINUX
 
-#ifdef COMPILER2
+#if defined(COMPILER2) && !defined(ANDROID)
     if (UseSecondarySupersTable) {
       StubRoutines::_lookup_secondary_supers_table_slow_path_stub = generate_lookup_secondary_supers_table_slow_path_stub();
       if (! InlineSecondarySupersTest) {

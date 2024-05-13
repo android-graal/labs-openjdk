@@ -44,6 +44,7 @@ AC_DEFUN_ONCE([LIB_DETERMINE_DEPENDENCIES],
   # Check if X11 is needed
   if test "x$OPENJDK_TARGET_OS" = xwindows ||
      test "x$OPENJDK_TARGET_OS" = xmacosx ||
+     test "x$OPENJDK_TARGET_OS" = xandroid ||
      test "x$ENABLE_HEADLESS_ONLY" = xtrue; then
     NEEDS_LIB_X11=false
   else
