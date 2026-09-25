@@ -53,8 +53,9 @@ AC_DEFUN_ONCE([LIB_DETERMINE_DEPENDENCIES],
   fi
 
   # Check if fontconfig is needed
-  if test "x$OPENJDK_TARGET_OS" = xwindows || test "x$OPENJDK_TARGET_OS" = xmacosx; then
-    # No fontconfig support on windows or macosx
+  if test "x$OPENJDK_TARGET_OS" = xwindows || test "x$OPENJDK_TARGET_OS" = xmacosx ||
+     test "x$OPENJDK_TARGET_OS" = xandroid; then
+    # No fontconfig support on windows, macosx or android
     NEEDS_LIB_FONTCONFIG=false
   else
     # All other instances need fontconfig, even if building headless only,
@@ -63,8 +64,9 @@ AC_DEFUN_ONCE([LIB_DETERMINE_DEPENDENCIES],
   fi
 
   # Check if cups is needed
-  if test "x$OPENJDK_TARGET_OS" = xwindows; then
-    # Windows have a separate print system
+  if test "x$OPENJDK_TARGET_OS" = xwindows || test "x$OPENJDK_TARGET_OS" = xandroid; then
+    # Windows have a separate print system, android has no printing at all and
+    # java.desktop native libraries are not built for it (see Lib.gmk).
     NEEDS_LIB_CUPS=false
   else
     NEEDS_LIB_CUPS=true
