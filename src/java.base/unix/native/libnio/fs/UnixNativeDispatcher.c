@@ -1249,6 +1249,105 @@ Java_sun_nio_fs_UnixNativeDispatcher_getpwuid(JNIEnv* env, jclass this, jint uid
 }
 
 
+#if defined(__ANDROID__) && __ANDROID_API__ < 24
+
+/* bionic only declares the reentrant getgrgid_r(3)/getgrnam_r(3) from API level 24 on.
+ * The non-reentrant pair fills a TLS buffer, so copying out of it is safe. */
+
+#ifndef __BIONIC_ALIGN
+#define __BIONIC_ALIGN(__value, __alignment) (((__value) + (__alignment)-1) & ~((__alignment)-1))
+#endif
+
+struct android_buf {
+    char* p;      /* NULL once an allocation did not fit */
+    size_t left;
+};
+
+static void* android_alloc(struct android_buf* b, size_t n)
+{
+    void* r = b->p;
+    if (b->p == NULL || n > b->left) {
+        b->p = NULL;
+        return NULL;
+    }
+    b->p += n;
+    b->left -= n;
+    return r;
+}
+
+static char* android_copy_str(struct android_buf* b, const char* s)
+{
+    if (s == NULL) {
+        return NULL;
+    }
+    size_t len = strlen(s) + 1;
+    char* dst = android_alloc(b, len);
+    if (dst != NULL) {
+        memcpy(dst, s, len);
+    }
+    return dst;
+}
+
+static int android_copy_group(struct group* src, struct group* grp,
+                              char* buf, size_t buflen, struct group** result)
+{
+    *result = NULL;
+    if (src == NULL) {
+        return errno;
+    }
+
+    struct android_buf b = { buf, buflen };
+    size_t nmem = 0;
+    while (src->gr_mem[nmem] != NULL) {
+        nmem++;
+    }
+
+    android_alloc(&b, (char*)__BIONIC_ALIGN((uintptr_t)buf, sizeof(char*)) - buf);
+    grp->gr_mem = android_alloc(&b, (nmem + 1) * sizeof(char*));
+    if (grp->gr_mem == NULL) {
+        return ERANGE;
+    }
+
+    grp->gr_name = android_copy_str(&b, src->gr_name);
+    grp->gr_passwd = android_copy_str(&b, src->gr_passwd);
+    for (size_t i = 0; i < nmem; i++) {
+        grp->gr_mem[i] = android_copy_str(&b, src->gr_mem[i]);
+    }
+    grp->gr_mem[nmem] = NULL;
+    grp->gr_gid = src->gr_gid;
+
+    if (b.p == NULL) {
+        return ERANGE;
+    }
+
+    *result = grp;
+    return 0;
+}
+
+static int getgrgid_r(gid_t gid, struct group* grp, char* buf, size_t buflen,
+                      struct group** result)
+{
+    errno = 0;
+    int r = android_copy_group(getgrgid(gid), grp, buf, buflen, result);
+    if (r != 0) {
+        errno = r;
+    }
+    return r;
+}
+
+static int getgrnam_r(const char* name, struct group* grp, char* buf,
+                      size_t buflen, struct group** result)
+{
+    errno = 0;
+    int r = android_copy_group(getgrnam(name), grp, buf, buflen, result);
+    if (r != 0) {
+        errno = r;
+    }
+    return r;
+}
+
+#endif /* __ANDROID__ && __ANDROID_API__ < 24 */
+
 JNIEXPORT jbyteArray JNICALL
 Java_sun_nio_fs_UnixNativeDispatcher_getgrgid(JNIEnv* env, jclass this, jint gid)
 {
