@@ -212,6 +212,11 @@ AC_DEFUN_ONCE([TOOLCHAIN_DETERMINE_TOOLCHAIN_TYPE],
   toolchain_var_name=VALID_TOOLCHAINS_$OPENJDK_BUILD_OS
   VALID_TOOLCHAINS=${!toolchain_var_name}
 
+  # The NDK only ships clang.
+  if test "x$OPENJDK_TARGET_OS" = xandroid; then
+    VALID_TOOLCHAINS="clang"
+  fi
+
   # First toolchain type in the list is the default
   DEFAULT_TOOLCHAIN=${VALID_TOOLCHAINS%% *}
 
