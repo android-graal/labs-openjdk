@@ -584,7 +584,14 @@ spawnChild(JNIEnv *env, jobject process, ChildStuff *c, const char *helperpath) 
         }
     }
 
+#if defined(ANDROID) && __ANDROID_API__ < 28
+    (void) hlpargs;
+    resultPid = -1;
+    rval = ENOSYS;
+    errno = ENOSYS;
+#else
     rval = posix_spawn(&resultPid, helperpath, 0, 0, (char * const *) hlpargs, environ);
+#endif
 
     if (rval != 0) {
         return -1;
