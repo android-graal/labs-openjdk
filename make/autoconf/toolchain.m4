@@ -672,6 +672,8 @@ AC_DEFUN_ONCE([TOOLCHAIN_DETECT_TOOLCHAIN_CORE],
     UTIL_LOOKUP_TOOLCHAIN_PROGS(LIB, lib)
   elif test "x$TOOLCHAIN_TYPE" = xgcc; then
     UTIL_LOOKUP_TOOLCHAIN_PROGS(AR, ar gcc-ar)
+  elif test "x$OPENJDK_TARGET_OS" = xandroid; then
+    UTIL_LOOKUP_TOOLCHAIN_PROGS(AR, llvm-ar ar)
   else
     UTIL_LOOKUP_TOOLCHAIN_PROGS(AR, ar)
   fi
@@ -726,10 +728,14 @@ AC_DEFUN_ONCE([TOOLCHAIN_DETECT_TOOLCHAIN_EXTRA],
   fi
 
   if test "x$OPENJDK_TARGET_OS" != xwindows; then
-    UTIL_LOOKUP_TOOLCHAIN_PROGS(STRIP, strip)
-    if test "x$TOOLCHAIN_TYPE" = xgcc; then
+    if test "x$OPENJDK_TARGET_OS" = xandroid; then
+      UTIL_LOOKUP_TOOLCHAIN_PROGS(STRIP, llvm-strip strip)
+      UTIL_LOOKUP_TOOLCHAIN_PROGS(NM, llvm-nm nm)
+    elif test "x$TOOLCHAIN_TYPE" = xgcc; then
+      UTIL_LOOKUP_TOOLCHAIN_PROGS(STRIP, strip)
       UTIL_LOOKUP_TOOLCHAIN_PROGS(NM, nm gcc-nm)
     else
+      UTIL_LOOKUP_TOOLCHAIN_PROGS(STRIP, strip)
       UTIL_LOOKUP_TOOLCHAIN_PROGS(NM, nm)
     fi
   fi
@@ -738,9 +744,15 @@ AC_DEFUN_ONCE([TOOLCHAIN_DETECT_TOOLCHAIN_EXTRA],
   # full debug symbols are enabled.
   if test "x$OPENJDK_TARGET_OS" = xlinux; then
     UTIL_LOOKUP_TOOLCHAIN_PROGS(OBJCOPY, gobjcopy objcopy)
+  elif test "x$OPENJDK_TARGET_OS" = xandroid; then
+    UTIL_LOOKUP_TOOLCHAIN_PROGS(OBJCOPY, llvm-objcopy objcopy)
   fi
 
-  UTIL_LOOKUP_TOOLCHAIN_PROGS(OBJDUMP, gobjdump objdump)
+  if test "x$OPENJDK_TARGET_OS" = xandroid; then
+    UTIL_LOOKUP_TOOLCHAIN_PROGS(OBJDUMP, llvm-objdump objdump)
+  else
+    UTIL_LOOKUP_TOOLCHAIN_PROGS(OBJDUMP, gobjdump objdump)
+  fi
 
   case $TOOLCHAIN_TYPE in
     gcc|clang)
