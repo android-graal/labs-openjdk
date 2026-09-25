@@ -27,43 +27,49 @@
 
 include LibCommon.gmk
 
-################################################################################
-## Build libdt_socket
-################################################################################
+# libjdwp needs iconv(3) and nl_langinfo(3), which bionic only has from API
+# level 28 / 26 on. Native-Image does offer its own JDWP implementation
+ifeq ($(call isTargetOs, android), false)
 
-$(eval $(call SetupJdkLibrary, BUILD_LIBDT_SOCKET, \
-    NAME := dt_socket, \
-    OPTIMIZATION := LOW, \
-    DISABLED_WARNINGS_clang_aix := missing-braces, \
-    EXTRA_HEADER_DIRS := \
-        include \
-        libjdwp/export, \
-    LIBS_linux := $(LIBPTHREAD), \
-    LIBS_windows := iphlpapi.lib ws2_32.lib, \
-))
+  ##############################################################################
+  ## Build libdt_socket
+  ##############################################################################
 
-# Include socket transport with JDWP agent to allow for remote debugging
-TARGETS += $(BUILD_LIBDT_SOCKET)
+  $(eval $(call SetupJdkLibrary, BUILD_LIBDT_SOCKET, \
+      NAME := dt_socket, \
+      OPTIMIZATION := LOW, \
+      DISABLED_WARNINGS_clang_aix := missing-braces, \
+      EXTRA_HEADER_DIRS := \
+          include \
+          libjdwp/export, \
+      LIBS_linux := $(LIBPTHREAD), \
+      LIBS_windows := iphlpapi.lib ws2_32.lib, \
+  ))
 
-################################################################################
-## Build libjdwp
-################################################################################
+  # Include socket transport with JDWP agent to allow for remote debugging
+  TARGETS += $(BUILD_LIBDT_SOCKET)
 
-# JDWP_LOGGING causes log messages to be compiled into the library.
-$(eval $(call SetupJdkLibrary, BUILD_LIBJDWP, \
-    NAME := jdwp, \
-    OPTIMIZATION := LOW, \
-    CFLAGS := -DJDWP_LOGGING $(ICONV_CFLAGS), \
-    LDFLAGS := $(ICONV_LDFLAGS), \
-    EXTRA_HEADER_DIRS := \
-        include \
-        libjdwp/export \
-        java.base:libjava, \
-    JDK_LIBS := java.base:libjvm, \
-    LIBS := $(ICONV_LIBS), \
-    LIBS_linux := $(LIBDL), \
-))
+  ##############################################################################
+  ## Build libjdwp
+  ##############################################################################
 
-TARGETS += $(BUILD_LIBJDWP)
+  # JDWP_LOGGING causes log messages to be compiled into the library.
+  $(eval $(call SetupJdkLibrary, BUILD_LIBJDWP, \
+      NAME := jdwp, \
+      OPTIMIZATION := LOW, \
+      CFLAGS := -DJDWP_LOGGING $(ICONV_CFLAGS), \
+      LDFLAGS := $(ICONV_LDFLAGS), \
+      EXTRA_HEADER_DIRS := \
+          include \
+          libjdwp/export \
+          java.base:libjava, \
+      JDK_LIBS := java.base:libjvm, \
+      LIBS := $(ICONV_LIBS), \
+      LIBS_linux := $(LIBDL), \
+  ))
+
+  TARGETS += $(BUILD_LIBJDWP)
+
+endif
 
 ################################################################################
