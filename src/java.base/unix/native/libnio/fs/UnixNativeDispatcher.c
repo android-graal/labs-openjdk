@@ -383,6 +383,16 @@ Java_sun_nio_fs_UnixNativeDispatcher_init(JNIEnv* env, jclass this)
 #endif
 #if defined(__linux__)
     my_statx_func = (statx_func*) dlsym(RTLD_DEFAULT, "statx");
+#if defined(__ANDROID__)
+    // bionic's statx is exported from android 30+, but a kernel before 4.11 rejects it with ENOSYS
+    // So we first test, if it actually works
+    if (my_statx_func != NULL) {
+        struct my_statx buf;
+        if (statx_wrapper(-1, "", AT_EMPTY_PATH, LOCAL_STATX_ALL, &buf) == -1 && errno == ENOSYS) {
+            my_statx_func = NULL;
+        }
+    }
+#endif
     if (my_statx_func != NULL) {
         capabilities |= sun_nio_fs_UnixNativeDispatcher_SUPPORTS_BIRTHTIME;
     }
